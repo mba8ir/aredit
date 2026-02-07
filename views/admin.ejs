@@ -52,12 +52,52 @@
     </div>
 
     <div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
-      <button onclick="seedDB()" id="seed-btn" style="padding:12px 24px; background:#4CAF50; color:white; border:none; border-radius:8px; font-family:inherit; font-size:16px; cursor:pointer;">🌱 ملء قاعدة البيانات (بيانات تجريبية)</button>
-      <button onclick="clearDB()" id="clear-btn" style="padding:12px 24px; background:#f44336; color:white; border:none; border-radius:8px; font-family:inherit; font-size:16px; cursor:pointer;">🗑️ حذف جميع البيانات</button>
+      <a href="/admin/export" style="padding:12px 24px; background:#2196F3; color:white; border:none; border-radius:8px; font-family:inherit; font-size:16px; cursor:pointer; text-decoration:none; display:inline-block;">📥 تصدير قاعدة البيانات</a>
+      <label style="padding:12px 24px; background:#FF9800; color:white; border:none; border-radius:8px; font-family:inherit; font-size:16px; cursor:pointer; display:inline-block;">
+        📤 استيراد قاعدة البيانات
+        <input type="file" accept=".json" onchange="importDB(this)" style="display:none;">
+      </label>
+      <button onclick="seedDB()" id="seed-btn" style="padding:12px 24px; background:#4CAF50; color:white; border:none; border-radius:8px; font-family:inherit; font-size:16px; cursor:pointer;">🌱 بيانات تجريبية</button>
+      <button onclick="clearDB()" id="clear-btn" style="padding:12px 24px; background:#f44336; color:white; border:none; border-radius:8px; font-family:inherit; font-size:16px; cursor:pointer;">🗑️ حذف الكل</button>
     </div>
     <div id="seed-status" style="margin-bottom:16px; padding:12px; border-radius:8px; display:none;"></div>
 
     <script>
+      async function importDB(input) {
+        const file = input.files[0];
+        if (!file) return;
+        if (!confirm('هل تريد استيراد البيانات؟ سيتم إضافة/استبدال السجلات الموجودة.')) {
+          input.value = '';
+          return;
+        }
+        const status = document.getElementById('seed-status');
+        status.style.display = 'block';
+        status.style.background = '#2196F3';
+        status.textContent = '⏳ جاري قراءة الملف وإرساله...';
+        try {
+          const text = await file.text();
+          const data = JSON.parse(text);
+          const res = await fetch('/admin/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          const result = await res.json();
+          if (result.success) {
+            status.style.background = '#4CAF50';
+            status.textContent = result.message;
+            setTimeout(() => location.reload(), 2000);
+          } else {
+            status.style.background = '#f44336';
+            status.textContent = result.error;
+          }
+        } catch (e) {
+          status.style.background = '#f44336';
+          status.textContent = 'خطأ: ' + e.message;
+        }
+        input.value = '';
+      }
+
       async function seedDB() {
         if (!confirm('هل تريد ملء قاعدة البيانات ببيانات تجريبية؟')) return;
         const btn = document.getElementById('seed-btn');

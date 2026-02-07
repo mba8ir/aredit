@@ -159,6 +159,96 @@ router.get('/admin/query', requireAdmin, (req, res) => {
   });
 });
 
+// Export entire database as JSON (download from local)
+router.get('/admin/export', requireAdmin, (req, res) => {
+  try {
+    const tableNames = [
+      'users', 'communities', 'community_follows', 'community_admins',
+      'posts', 'comments', 'votes', 'bookmarks', 'reports',
+      'notifications', 'password_resets'
+    ];
+
+    const data = {};
+    for (const table of tableNames) {
+      try {
+        data[table] = db.prepare(`SELECT * FROM "${table}"`).all();
+      } catch (e) {
+        data[table] = [];
+      }
+    }
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename=aredit-export.json');
+    res.send(JSON.stringify(data, null, 2));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Import database from JSON (upload to Railway)
+router.post('/admin/import', requireAdmin, express.json({ limit: '50mb' }), (req, res) => {
+  try {
+    const data = req.body;
+
+    if (!data || !data.users) {
+      return res.json({ success: false, error: 'ملف غير صالح. يجب أن يحتوي على جدول users على الأقل.' });
+    }
+
+    // Import order matters due to foreign keys - disable temporarily
+    db.pragma('foreign_keys = OFF');
+
+    const importTable = (tableName, rows) => {
+      if (!rows || rows.length === 0) return 0;
+      const columns = Object.keys(rows[0]);
+      const placeholders = columns.map(() => '?').join(', ');
+      const colNames = columns.map(c => `"${c}"`).join(', ');
+      const stmt = db.prepare(`INSERT OR REPLACE INTO "${tableName}" (${colNames}) VALUES (${placeholders})`);
+
+      const insertMany = db.transaction((rows) => {
+        for (const row of rows) {
+          const values = columns.map(c => row[c] !== undefined ? row[c] : null);
+          stmt.run(...values);
+        }
+      });
+      insertMany(rows);
+      return rows.length;
+    };
+
+    const importOrder = [
+      'users', 'communities', 'community_follows', 'community_admins',
+      'posts', 'comments', 'votes', 'bookmarks', 'reports',
+      'notifications', 'password_resets'
+    ];
+
+    const results = {};
+    for (const table of importOrder) {
+      if (data[table] && data[table].length > 0) {
+        results[table] = importTable(table, data[table]);
+      }
+    }
+
+    db.pragma('foreign_keys = ON');
+
+    // Rebuild FTS index
+    try {
+      db.exec(`DELETE FROM posts_fts;`);
+      const posts = db.prepare('SELECT id, title, body FROM posts').all();
+      const insertFts = db.prepare('INSERT OR IGNORE INTO posts_fts(rowid, title, body) VALUES (?, ?, ?)');
+      db.transaction(() => {
+        for (const p of posts) {
+          insertFts.run(p.id, p.title, p.body);
+        }
+      })();
+    } catch (e) { /* FTS rebuild failed, not critical */ }
+
+    const summary = Object.entries(results).map(([t, c]) => `${t}: ${c}`).join('، ');
+    res.json({ success: true, message: `تم الاستيراد بنجاح! ${summary}` });
+  } catch (e) {
+    db.pragma('foreign_keys = ON');
+    res.json({ success: false, error: e.message });
+  }
+});
+
 // Seed database from admin panel
 router.post('/admin/seed', requireAdmin, async (req, res) => {
   try {
