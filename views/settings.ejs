@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الإعدادات | راية الفرسان</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="container">
+    <div class="create-post-card">
+      <h1>إعدادات الملف الشخصي</h1>
+
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+      <% if (success) { %>
+        <div class="alert alert-success"><%= success %></div>
+      <% } %>
+
+      <form method="POST" action="/settings" enctype="multipart/form-data">
+        <div class="form-group">
+          <label>اسم المستخدم</label>
+          <input type="text" value="<%= profileUser.username %>" disabled style="opacity: 0.6;">
+        </div>
+        <div class="form-group">
+          <label for="avatar">صورة الملف الشخصي</label>
+          <% if (profileUser.avatar_url) { %>
+            <div style="margin-bottom: 0.5rem;">
+              <img src="<%= profileUser.avatar_url %>" alt="الصورة الحالية" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover;">
+            </div>
+          <% } %>
+          <input type="file" id="avatar" name="avatar" accept="image/*">
+          <div class="file-preview" id="avatar-preview"></div>
+        </div>
+        <div class="form-group">
+          <label for="bio">نبذة عنك</label>
+          <textarea id="bio" name="bio" rows="3" dir="rtl" placeholder="اكتب نبذة قصيرة عنك..." maxlength="500"><%= profileUser.bio || '' %></textarea>
+          <div class="char-counter"><span id="bio-count"><%= (profileUser.bio || '').length %></span>/500</div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">حفظ الإعدادات</button>
+      </form>
+    </div>
+  </main>
+  <script src="/app.js"></script>
+  <script>
+    const bioField = document.getElementById('bio');
+    const bioCount = document.getElementById('bio-count');
+    if (bioField && bioCount) {
+      bioField.addEventListener('input', () => { bioCount.textContent = bioField.value.length; });
+    }
+    // Image preview
+    const avatarInput = document.getElementById('avatar');
+    const avatarPreview = document.getElementById('avatar-preview');
+    if (avatarInput) {
+      avatarInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            avatarPreview.innerHTML = '<img src="' + e.target.result + '" style="max-width:200px;max-height:200px;border-radius:8px;margin-top:0.5rem;">';
+          };
+          reader.readAsDataURL(this.files[0]);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

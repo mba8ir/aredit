@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تعديل المنشور | راية الفرسان</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="container">
+    <div class="create-post-card">
+      <h1>تعديل المنشور</h1>
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+      <form method="POST" action="/p/<%= post.id %>/edit">
+        <div class="form-group">
+          <label for="title">العنوان</label>
+          <input type="text" id="title" name="title" required dir="rtl" value="<%= post.title %>" maxlength="300">
+          <div class="char-counter"><span id="title-count"><%= post.title.length %></span>/300</div>
+        </div>
+        <div class="form-group">
+          <label for="body">المحتوى</label>
+          <textarea id="body" name="body" rows="8" dir="rtl" maxlength="40000"><%= post.body || '' %></textarea>
+          <div class="char-counter"><span id="body-count"><%= (post.body || '').length %></span>/40000</div>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="submit" class="btn btn-primary" style="flex:1;">حفظ التعديلات</button>
+          <a href="/p/<%= post.id %>" class="btn btn-outline" style="flex:1; text-align:center;">إلغاء</a>
+        </div>
+      </form>
+    </div>
+  </main>
+  <script>
+    document.getElementById('title').addEventListener('input', function() {
+      document.getElementById('title-count').textContent = this.value.length;
+    });
+    document.getElementById('body').addEventListener('input', function() {
+      document.getElementById('body-count').textContent = this.value.length;
+    });
+  </script>
+</body>
+</html>

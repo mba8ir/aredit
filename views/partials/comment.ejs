@@ -1,0 +1,37 @@
+<div class="comment" id="comment-<%= comment.id %>">
+  <div class="comment-header">
+    <div class="comment-vote" data-type="comment" data-id="<%= comment.id %>" role="group" aria-label="تصويت">
+      <button class="vote-btn upvote <%= (typeof userVotes !== 'undefined' && userVotes['comment_' + comment.id] === 1) ? 'active' : '' %>" data-value="1" aria-label="تصويت إيجابي">&#9650;</button>
+      <span class="score"><%= comment.score %></span>
+      <button class="vote-btn downvote <%= (typeof userVotes !== 'undefined' && userVotes['comment_' + comment.id] === -1) ? 'active' : '' %>" data-value="-1" aria-label="تصويت سلبي">&#9660;</button>
+    </div>
+    <a href="/u/<%= comment.username %>" class="comment-author"><%= comment.username %></a>
+    <time class="comment-time" datetime="<%= comment.created_at %>"><%= timeAgo(comment.created_at) %></time>
+    <% if (comment.edited_at) { %><span class="edited-badge">(معدّل)</span><% } %>
+  </div>
+  <div class="comment-body" id="comment-body-<%= comment.id %>"><%= comment.body %></div>
+  <div class="comment-actions">
+    <button class="reply-toggle" onclick="toggleReply(<%= comment.id %>)">رد</button>
+    <% if (typeof currentUser !== 'undefined' && currentUser && currentUser.id === comment.user_id) { %>
+      <button class="reply-toggle" onclick="editComment(<%= comment.id %>)">تعديل</button>
+      <form method="POST" action="/comment/<%= comment.id %>/delete" style="display:inline;">
+        <button type="submit" class="reply-toggle" onclick="return confirm('هل تريد حذف هذا التعليق؟')">حذف</button>
+      </form>
+    <% } %>
+    <button class="reply-toggle" onclick="showReportModal('comment', <%= comment.id %>)">&#9873; إبلاغ</button>
+  </div>
+  <div class="reply-form" id="reply-form-<%= comment.id %>" style="display:none;">
+    <form method="POST" action="/p/<%= comment.post_id %>/comment">
+      <input type="hidden" name="parent_comment_id" value="<%= comment.id %>">
+      <textarea name="body" rows="3" placeholder="اكتب ردك..." required maxlength="10000"></textarea>
+      <button type="submit" class="btn btn-sm">إرسال</button>
+    </form>
+  </div>
+  <% if (comment.children && comment.children.length > 0) { %>
+    <div class="comment-children">
+      <% comment.children.forEach(child => { %>
+        <%- include('comment', { comment: child, userVotes: typeof userVotes !== 'undefined' ? userVotes : {} }) %>
+      <% }) %>
+    </div>
+  <% } %>
+</div>

@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /settings
+Disallow: /bookmarks
+Disallow: /notifications
+Disallow: /c/new
+
+Sitemap: /sitemap.xml

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إعدادات <%= community.name %> | راية الفرسان</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="container">
+    <div class="create-post-card">
+      <h1>إعدادات <%= community.icon %> <%= community.name %></h1>
+      <a href="/c/<%= community.id %>" class="action-link" style="display: inline-block; margin-bottom: 1rem;">&larr; العودة للمجتمع</a>
+
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+      <% if (success) { %>
+        <div class="alert alert-success"><%= success %></div>
+      <% } %>
+
+      <form method="POST" action="/c/<%= community.id %>/settings" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="description">الوصف</label>
+          <textarea id="description" name="description" rows="3" dir="rtl" maxlength="500"><%= community.description || '' %></textarea>
+        </div>
+        <div class="form-group">
+          <label for="rules">قوانين المجتمع</label>
+          <textarea id="rules" name="rules" rows="4" dir="rtl" maxlength="2000" placeholder="1. احترام الآخرين&#10;2. عدم النشر المكرر"><%= community.rules || '' %></textarea>
+        </div>
+        <div class="form-group">
+          <label for="icon">أيقونة المجتمع (إيموجي)</label>
+          <input type="text" id="icon" name="icon" value="<%= community.icon %>" maxlength="4" style="width: 80px; text-align: center; font-size: 1.5rem;">
+        </div>
+        <div class="form-group">
+          <label for="accent_color">لون المجتمع</label>
+          <input type="color" id="accent_color" name="accent_color" value="<%= community.accent_color || '#e94560' %>" style="width: 60px; height: 40px; padding: 2px; cursor: pointer;">
+        </div>
+        <div class="form-group">
+          <label for="banner">صورة الغلاف</label>
+          <% if (community.banner_url) { %>
+            <div style="margin-bottom: 0.5rem;">
+              <img src="<%= community.banner_url %>" alt="الغلاف الحالي" style="max-width: 100%; max-height: 150px; border-radius: 8px;">
+            </div>
+          <% } %>
+          <input type="file" id="banner" name="banner" accept="image/*">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">حفظ الإعدادات</button>
+      </form>
+
+      <% if (typeof reports !== 'undefined' && reports.length > 0) { %>
+        <hr style="border-color: #0f3460; margin: 2rem 0;">
+        <h2 style="font-size: 1.1rem; color: #fff; margin-bottom: 1rem;">البلاغات المعلقة (<%= reports.length %>)</h2>
+        <% reports.forEach(r => { %>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem; background: rgba(233,69,96,0.08); border: 1px solid rgba(233,69,96,0.2); border-radius: 6px; margin-bottom: 0.5rem;">
+            <div>
+              <span style="font-size: 0.85rem; color: #ccc;"><%= r.reportable_type === 'post' ? 'منشور' : 'تعليق' %> #<%= r.reportable_id %></span>
+              <p style="color: #ff6b6b; font-size: 0.85rem;"><%= r.reason %></p>
+              <span style="font-size: 0.75rem; color: #666;">بواسطة: <%= r.reporter_name %> - <%= timeAgo(r.created_at) %></span>
+            </div>
+            <form method="POST" action="/c/<%= community.id %>/report/<%= r.id %>/resolve">
+              <button type="submit" class="btn btn-sm" style="background: rgba(76,175,80,0.2); color: #81c784; border: none;">تمت المعالجة</button>
+            </form>
+          </div>
+        <% }) %>
+      <% } %>
+
+      <% if (adminRole.role === 'creator') { %>
+        <hr style="border-color: #0f3460; margin: 2rem 0;">
+        <h2 style="font-size: 1.1rem; color: #fff; margin-bottom: 1rem;">إدارة المشرفين</h2>
+
+        <div style="margin-bottom: 1.5rem;">
+          <% admins.forEach(admin => { %>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; background: rgba(255,255,255,0.03); border-radius: 6px; margin-bottom: 0.5rem;">
+              <div>
+                <a href="/u/<%= admin.username %>" style="font-weight: 600;"><%= admin.username %></a>
+                <span style="font-size: 0.75rem; color: #888; margin-right: 0.5rem;">
+                  <%= admin.role === 'creator' ? 'المنشئ' : 'مشرف' %>
+                </span>
+              </div>
+              <% if (admin.role !== 'creator') { %>
+                <form method="POST" action="/c/<%= community.id %>/admin/remove" style="margin: 0;">
+                  <input type="hidden" name="user_id" value="<%= admin.user_id %>">
+                  <button type="submit" class="btn btn-sm" style="background: rgba(233,69,96,0.2); color: #ff6b6b; border: none;" onclick="return confirm('هل تريد إزالة هذا المشرف؟')">إزالة</button>
+                </form>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+
+        <form method="POST" action="/c/<%= community.id %>/admin/add" style="display: flex; gap: 0.5rem; align-items: end;">
+          <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <label for="username">إضافة مشرف (اسم المستخدم)</label>
+            <input type="text" id="username" name="username" required placeholder="اسم المستخدم">
+          </div>
+          <button type="submit" class="btn btn-primary">إضافة</button>
+        </form>
+      <% } %>
+    </div>
+  </main>
+</body>
+</html>

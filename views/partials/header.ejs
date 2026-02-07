@@ -1,0 +1,30 @@
+<header class="site-header" role="banner">
+  <div class="header-inner">
+    <a href="/" class="logo" aria-label="الصفحة الرئيسية">راية الفرسان</a>
+
+    <form action="/search" method="GET" class="search-form" role="search">
+      <input type="text" name="q" placeholder="بحث..." class="search-input" aria-label="بحث في المنشورات" value="<%= typeof q !== 'undefined' ? q : '' %>">
+      <button type="submit" class="search-btn" aria-label="بحث">&#128269;</button>
+    </form>
+
+    <button class="mobile-menu-btn" onclick="document.querySelector('.header-nav').classList.toggle('open')" aria-label="القائمة">&#9776;</button>
+
+    <nav class="header-nav" role="navigation">
+      <a href="/communities" class="nav-link">المجتمعات</a>
+      <% if (currentUser) { %>
+        <a href="/bookmarks" class="nav-link" aria-label="المحفوظات">&#128278;</a>
+        <a href="/notifications" class="nav-link notification-link" aria-label="الإشعارات">
+          &#128276;<% if (unreadNotifications > 0) { %><span class="notification-badge"><%= unreadNotifications %></span><% } %>
+        </a>
+        <a href="/u/<%= currentUser.username %>" class="nav-user"><%= currentUser.username %></a>
+        <a href="/settings" class="nav-link">&#9881;</a>
+        <form method="POST" action="/logout" style="display:inline;">
+          <button type="submit" class="nav-link logout-btn">خروج</button>
+        </form>
+      <% } else { %>
+        <a href="/login" class="nav-link">دخول</a>
+        <a href="/register" class="nav-link btn-register">تسجيل</a>
+      <% } %>
+    </nav>
+  </div>
+</header>

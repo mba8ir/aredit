@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>راية الفرسان - الصفحة الرئيسية</title>
+  <meta name="description" content="<%= typeof pageDescription !== 'undefined' ? pageDescription : 'راية الفرسان - منتدى عربي للنقاشات والمجتمعات' %>">
+  <meta property="og:title" content="راية الفرسان">
+  <meta property="og:description" content="منتدى عربي للنقاشات والمجتمعات">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <link rel="alternate" type="application/rss+xml" title="راية الفرسان RSS" href="/feed.xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="container home-layout">
+    <div class="feed">
+      <% if (currentUser) { %>
+        <h2 class="section-title">منشورات مجتمعاتك</h2>
+        <% if (posts.length === 0 && allCommunities && allCommunities.length > 0) { %>
+          <p class="empty-state">أنت لا تتابع أي مجتمع. اكتشف المجتمعات وتابعها:</p>
+          <div class="community-grid">
+            <% allCommunities.forEach(c => { %>
+              <a href="/c/<%= c.id %>" class="community-grid-card">
+                <span class="community-grid-icon"><%= c.icon %></span>
+                <span class="community-grid-name"><%= c.name %></span>
+                <% if (c.description) { %>
+                  <span class="community-grid-desc"><%= c.description.substring(0, 80) %><%= c.description.length > 80 ? '...' : '' %></span>
+                <% } %>
+                <span class="community-grid-followers"><%= c.follower_count %> متابع</span>
+              </a>
+            <% }) %>
+          </div>
+        <% } else if (posts.length === 0) { %>
+          <p class="empty-state">أنت لا تتابع أي مجتمع. <a href="/communities">تصفح المجتمعات</a></p>
+        <% } %>
+      <% } else { %>
+        <div class="landing-hero">
+          <h1>مرحباً بك في راية الفرسان</h1>
+          <p>منتدى عربي للنقاشات والمجتمعات. انضم إلينا وشارك في الحوار.</p>
+          <div class="hero-actions">
+            <a href="/register" class="btn btn-primary">انضم الآن</a>
+            <a href="/communities" class="btn btn-outline">تصفح المجتمعات</a>
+          </div>
+        </div>
+        <h2 class="section-title">آخر المنشورات</h2>
+        <% if (posts.length === 0) { %>
+          <p class="empty-state">لا توجد منشورات بعد. كن أول من ينشر!</p>
+        <% } %>
+      <% } %>
+      <% posts.forEach(post => { %>
+        <%- include('partials/post-card', { post, userVotes: {} }) %>
+      <% }) %>
+      <%- include('partials/pagination', { page, totalPages }) %>
+    </div>
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h3 class="sidebar-title"><%= currentUser ? 'مجتمعاتك' : 'المجتمعات' %></h3>
+        <ul class="community-list">
+          <% communities.forEach(c => { %>
+            <li>
+              <a href="/c/<%= c.id %>">
+                <span class="community-icon"><%= c.icon %></span>
+                <span class="community-name"><%= c.name %></span>
+                <span class="follower-count"><%= c.follower_count %> متابع</span>
+              </a>
+            </li>
+          <% }) %>
+        </ul>
+        <a href="/communities" class="sidebar-more-link">عرض الكل &larr;</a>
+      </div>
+      <% if (currentUser) { %>
+        <div class="sidebar-card" style="margin-top: 1rem;">
+          <a href="/c/new" class="btn btn-primary btn-block">+ إنشاء مجتمع</a>
+        </div>
+      <% } %>
+    </aside>
+  </main>
+  <div id="toast-container"></div>
+  <div id="report-modal" class="modal" style="display:none;"></div>
+  <script src="/app.js"></script>
+  <script src="/embed.js"></script>
+</body>
+</html>

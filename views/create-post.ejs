@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منشور جديد | راية الفرسان</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="container">
+    <div class="create-post-card">
+      <h1>منشور جديد في <%= community.name %></h1>
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+      <form method="POST" action="/c/<%= community.id %>/new" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="title">العنوان</label>
+          <input type="text" id="title" name="title" required dir="rtl" placeholder="عنوان المنشور" maxlength="300">
+          <div class="char-counter"><span id="title-count">0</span>/300</div>
+        </div>
+        <div class="form-group">
+          <label for="body">المحتوى (اختياري)</label>
+          <textarea id="body" name="body" rows="6" dir="rtl" placeholder="اكتب محتوى منشورك هنا..." maxlength="40000"></textarea>
+          <div class="char-counter"><span id="body-count">0</span>/40000</div>
+        </div>
+        <div class="form-group">
+          <label for="media">صورة أو فيديو (اختياري)</label>
+          <input type="file" id="media" name="media" accept="image/*,video/mp4,video/webm">
+          <div class="file-preview" id="media-preview"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">نشر</button>
+      </form>
+    </div>
+  </main>
+  <script>
+    document.getElementById('title').addEventListener('input', function() {
+      document.getElementById('title-count').textContent = this.value.length;
+    });
+    document.getElementById('body').addEventListener('input', function() {
+      document.getElementById('body-count').textContent = this.value.length;
+    });
+    document.getElementById('media').addEventListener('change', function() {
+      const preview = document.getElementById('media-preview');
+      if (this.files && this.files[0]) {
+        const file = this.files[0];
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            preview.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:300px;border-radius:8px;margin-top:0.5rem;">';
+          };
+          reader.readAsDataURL(file);
+        } else {
+          preview.innerHTML = '<p style="color:#888;margin-top:0.5rem;">فيديو: ' + file.name + '</p>';
+        }
+      }
+    });
+  </script>
+</body>
+</html>

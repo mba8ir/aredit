@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= post.title %> | راية الفرسان</title>
+  <meta name="description" content="<%= (post.body || '').substring(0, 200) %>">
+  <meta property="og:title" content="<%= post.title %>">
+  <meta property="og:description" content="<%= (post.body || '').substring(0, 200) %>">
+  <meta property="og:type" content="article">
+  <% if (post.media_type === 'image') { %><meta property="og:image" content="<%= post.media_url %>"><% } %>
+  <meta name="twitter:card" content="summary">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="container post-page">
+    <article class="post-full">
+      <div class="vote-controls" data-type="post" data-id="<%= post.id %>" role="group" aria-label="تصويت">
+        <button class="vote-btn upvote <%= userVotes['post_' + post.id] === 1 ? 'active' : '' %>" data-value="1" aria-label="تصويت إيجابي">&#9650;</button>
+        <span class="score"><%= post.score %></span>
+        <button class="vote-btn downvote <%= userVotes['post_' + post.id] === -1 ? 'active' : '' %>" data-value="-1" aria-label="تصويت سلبي">&#9660;</button>
+      </div>
+      <div class="post-content">
+        <div class="post-meta">
+          <a href="/c/<%= post.community_id %>" class="community-tag"><%= post.community_name %></a>
+          <span class="separator">&bull;</span>
+          <a href="/u/<%= post.username %>" class="post-author"><%= post.username %></a>
+          <span class="separator">&bull;</span>
+          <time class="post-time" datetime="<%= post.created_at %>"><%= timeAgo(post.created_at) %></time>
+          <% if (post.edited_at) { %><span class="edited-badge">(معدّل)</span><% } %>
+        </div>
+        <h1 class="post-title-full"><%= post.title %></h1>
+        <% if (post.body) { %>
+          <div class="post-body-full"><%= post.body %></div>
+        <% } %>
+        <% if (post.media_type === 'image') { %>
+          <div class="post-media-full">
+            <img src="<%= post.media_url %>" alt="صورة المنشور">
+          </div>
+        <% } %>
+        <% if (post.media_type === 'video') { %>
+          <div class="post-media-full">
+            <video src="<%= post.media_url %>" controls></video>
+          </div>
+        <% } %>
+        <div class="post-actions" style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #0f3460;">
+          <button class="action-link share-btn" onclick="copyLink('/p/<%= post.id %>')">&#128279; مشاركة</button>
+          <% if (currentUser) { %>
+            <button class="action-link bookmark-btn" onclick="toggleBookmark(<%= post.id %>, this)" data-bookmarked="<%= isBookmarked %>">
+              <%= isBookmarked ? '&#128278; محفوظ' : '&#128278; حفظ' %>
+            </button>
+            <button class="action-link" onclick="showReportModal('post', <%= post.id %>)">&#9873; إبلاغ</button>
+          <% } %>
+          <% if (currentUser && currentUser.id === post.user_id) { %>
+            <a href="/p/<%= post.id %>/edit" class="action-link">&#9998; تعديل</a>
+            <form method="POST" action="/p/<%= post.id %>/delete" style="display:inline;">
+              <button type="submit" class="action-link admin-delete-btn" onclick="return confirm('هل تريد حذف هذا المنشور؟')">&#128465; حذف</button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+    </article>
+
+    <section class="comments-section">
+      <h2 class="comments-title">التعليقات (<%= comments.length %>)</h2>
+
+      <% if (currentUser) { %>
+        <form method="POST" action="/p/<%= post.id %>/comment" class="comment-form">
+          <textarea name="body" rows="4" placeholder="اكتب تعليقك..." required maxlength="10000"></textarea>
+          <button type="submit" class="btn btn-primary">إرسال</button>
+        </form>
+      <% } else { %>
+        <p class="login-prompt"><a href="/login">سجل دخولك</a> للتعليق</p>
+      <% } %>
+
+      <div class="comments-list">
+        <% comments.forEach(comment => { %>
+          <%- include('partials/comment', { comment, userVotes }) %>
+        <% }) %>
+      </div>
+    </section>
+  </main>
+  <div id="toast-container"></div>
+  <div id="report-modal" class="modal" style="display:none;"></div>
+  <script src="/app.js"></script>
+  <script src="/embed.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<% if (totalPages > 1) { %>
+  <nav class="pagination" role="navigation" aria-label="التنقل بين الصفحات">
+    <% if (page > 1) { %>
+      <a href="?<%= typeof sort !== 'undefined' ? 'sort=' + sort + '&' : '' %><%= typeof q !== 'undefined' ? 'q=' + encodeURIComponent(q) + '&' : '' %>page=<%= page - 1 %>" class="pagination-link">&rarr; السابق</a>
+    <% } %>
+    <span class="pagination-info">صفحة <%= page %> من <%= totalPages %></span>
+    <% if (page < totalPages) { %>
+      <a href="?<%= typeof sort !== 'undefined' ? 'sort=' + sort + '&' : '' %><%= typeof q !== 'undefined' ? 'q=' + encodeURIComponent(q) + '&' : '' %>page=<%= page + 1 %>" class="pagination-link">التالي &larr;</a>
+    <% } %>
+  </nav>
+<% } %>

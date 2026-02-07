@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المحفوظات | راية الفرسان</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="container">
+    <h1 class="section-title" style="margin-bottom: 1.5rem;">المنشورات المحفوظة (<%= posts.length %>)</h1>
+
+    <% if (posts.length === 0) { %>
+      <p class="empty-state">لا توجد منشورات محفوظة. اضغط على زر الحفظ في أي منشور لإضافته هنا.</p>
+    <% } %>
+
+    <% posts.forEach(post => { %>
+      <%- include('partials/post-card', { post, userVotes: {} }) %>
+    <% }) %>
+  </main>
+  <div id="toast-container"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

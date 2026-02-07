@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= community.name %> | راية الفرسان</title>
+  <meta name="description" content="<%= community.description || community.name %>">
+  <meta property="og:title" content="<%= community.name %>">
+  <meta property="og:description" content="<%= community.description || '' %>">
+  <meta property="og:type" content="website">
+  <link rel="alternate" type="application/rss+xml" title="<%= community.name %> RSS" href="/c/<%= community.id %>/feed.xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    :root { --community-accent: <%= community.accent_color || '#e94560' %>; }
+    .community-header-banner {
+      border-color: var(--community-accent);
+      <% if (community.banner_url) { %>
+      background: linear-gradient(rgba(22, 33, 62, 0.75), rgba(15, 52, 96, 0.85)), url('<%= community.banner_url %>') center/cover no-repeat;
+      <% } %>
+    }
+    .community-page .btn-primary { background: var(--community-accent); }
+    .community-page .btn-primary:hover { background: var(--community-accent); filter: brightness(1.2); }
+    .community-page .btn-outline { border-color: var(--community-accent); color: var(--community-accent); }
+    .community-page .btn-outline:hover { background: var(--community-accent); color: #fff; }
+    .community-page .sort-option.active { background: var(--community-accent); }
+    .community-page .sidebar-title { color: var(--community-accent); }
+    .community-page .community-header-banner { border: 2px solid var(--community-accent); }
+  </style>
+</head>
+<body class="community-page">
+  <%- include('partials/header') %>
+  <main class="container">
+    <div class="community-header-banner">
+      <div class="community-info">
+        <span class="community-big-icon"><%= community.icon %></span>
+        <div>
+          <h1><%= community.name %></h1>
+          <% if (community.description) { %>
+            <p class="community-desc"><%= community.description %></p>
+          <% } %>
+          <span class="follower-badge"><%= followerCount %> متابع</span>
+        </div>
+      </div>
+      <div class="community-actions">
+        <% if (currentUser) { %>
+          <form method="POST" action="/c/<%= community.id %>/follow">
+            <button type="submit" class="btn <%= isFollowing ? 'btn-outline' : 'btn-primary' %>">
+              <%= isFollowing ? 'إلغاء المتابعة' : 'متابعة' %>
+            </button>
+          </form>
+          <a href="/c/<%= community.id %>/new" class="btn btn-primary">منشور جديد</a>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="community-layout">
+      <div class="community-feed">
+        <div class="sort-bar">
+          <a href="?sort=new" class="sort-option <%= sort === 'new' ? 'active' : '' %>">الأحدث</a>
+          <a href="?sort=hot" class="sort-option <%= sort === 'hot' ? 'active' : '' %>">الرائج</a>
+          <a href="?sort=top" class="sort-option <%= sort === 'top' ? 'active' : '' %>">الأعلى تقييماً</a>
+          <a href="?sort=controversial" class="sort-option <%= sort === 'controversial' ? 'active' : '' %>">المثير للجدل</a>
+        </div>
+
+        <div class="feed">
+          <% if (posts.length === 0) { %>
+            <p class="empty-state">لا توجد منشورات في هذا المجتمع بعد.</p>
+          <% } %>
+          <% posts.forEach(post => { %>
+            <article class="post-card">
+              <div class="vote-controls" data-type="post" data-id="<%= post.id %>" role="group" aria-label="تصويت">
+                <button class="vote-btn upvote" data-value="1" aria-label="تصويت إيجابي">&#9650;</button>
+                <span class="score"><%= post.score %></span>
+                <button class="vote-btn downvote" data-value="-1" aria-label="تصويت سلبي">&#9660;</button>
+              </div>
+              <div class="post-content">
+                <div class="post-meta">
+                  <a href="/c/<%= community.id %>" class="community-tag"><%= community.name %></a>
+                  <span class="separator">&bull;</span>
+                  <a href="/u/<%= post.username %>" class="post-author"><%= post.username %></a>
+                  <span class="separator">&bull;</span>
+                  <time class="post-time" datetime="<%= post.created_at %>"><%= timeAgo(post.created_at) %></time>
+                  <% if (post.edited_at) { %><span class="edited-badge">(معدّل)</span><% } %>
+                </div>
+                <a href="/p/<%= post.id %>" class="post-title"><%= post.title %></a>
+                <% if (post.body) { %>
+                  <p class="post-body-preview"><%= post.body.substring(0, 200) %><%= post.body.length > 200 ? '...' : '' %></p>
+                <% } %>
+                <% if (post.media_type === 'image') { %>
+                  <div class="post-media">
+                    <img src="<%= post.media_url %>" alt="صورة المنشور" loading="lazy">
+                  </div>
+                <% } %>
+                <% if (post.media_type === 'video') { %>
+                  <div class="post-media">
+                    <video src="<%= post.media_url %>" controls preload="metadata"></video>
+                  </div>
+                <% } %>
+                <div class="post-actions">
+                  <a href="/p/<%= post.id %>" class="action-link">&#128172; <%= typeof post.comment_count !== 'undefined' ? post.comment_count : 0 %> تعليق</a>
+                  <button class="action-link share-btn" onclick="copyLink('/p/<%= post.id %>')">&#128279; مشاركة</button>
+                  <% if (typeof adminRole !== 'undefined' && adminRole) { %>
+                    <form method="POST" action="/c/<%= community.id %>/post/<%= post.id %>/delete" style="display: inline;">
+                      <button type="submit" class="action-link admin-delete-btn" onclick="return confirm('هل تريد حذف هذا المنشور؟')">&#128465; حذف</button>
+                    </form>
+                  <% } %>
+                </div>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+        <%- include('partials/pagination', { page, totalPages, sort }) %>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h3 class="sidebar-title">حول المجتمع</h3>
+          <% if (community.description) { %>
+            <p style="color: #ccc; font-size: 0.9rem; margin-bottom: 0.75rem;"><%= community.description %></p>
+          <% } %>
+          <div style="font-size: 0.85rem; color: #888; display: flex; flex-direction: column; gap: 0.4rem;">
+            <span>&#128101; <%= followerCount %> متابع</span>
+            <span>&#128197; أنشئ في <%= new Date(community.created_at).toLocaleDateString('ar-EG') %></span>
+          </div>
+        </div>
+
+        <% if (community.rules) { %>
+          <div class="sidebar-card" style="margin-top: 1rem;">
+            <h3 class="sidebar-title">قوانين المجتمع</h3>
+            <div style="color: #ccc; font-size: 0.85rem; white-space: pre-wrap;"><%= community.rules %></div>
+          </div>
+        <% } %>
+
+        <% if (typeof admins !== 'undefined' && admins.length > 0) { %>
+          <div class="sidebar-card" style="margin-top: 1rem;">
+            <h3 class="sidebar-title">المشرفون</h3>
+            <ul class="community-list">
+              <% admins.forEach(admin => { %>
+                <li>
+                  <a href="/u/<%= admin.username %>">
+                    <span class="community-name"><%= admin.username %></span>
+                    <span class="follower-count"><%= admin.role === 'creator' ? 'المنشئ' : 'مشرف' %></span>
+                  </a>
+                </li>
+              <% }) %>
+            </ul>
+          </div>
+        <% } %>
+
+        <% if (typeof adminRole !== 'undefined' && adminRole) { %>
+          <div style="margin-top: 1rem;">
+            <a href="/c/<%= community.id %>/settings" class="btn btn-outline btn-block btn-sm">&#9881; إعدادات المجتمع</a>
+          </div>
+        <% } %>
+      </aside>
+    </div>
+  </main>
+  <div id="toast-container"></div>
+  <div id="report-modal" class="modal" style="display:none;"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

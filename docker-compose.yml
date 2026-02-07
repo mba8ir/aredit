@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  aredit:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./aredit.db:/app/aredit.db
+      - ./uploads:/app/uploads
+    env_file:
+      - .env
+    restart: unless-stopped

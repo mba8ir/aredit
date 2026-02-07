@@ -1,0 +1,35 @@
+<article class="post-card">
+  <div class="vote-controls" data-type="post" data-id="<%= post.id %>" role="group" aria-label="تصويت">
+    <button class="vote-btn upvote <%= (typeof userVotes !== 'undefined' && userVotes['post_' + post.id] === 1) ? 'active' : '' %>" data-value="1" aria-label="تصويت إيجابي">&#9650;</button>
+    <span class="score"><%= post.score %></span>
+    <button class="vote-btn downvote <%= (typeof userVotes !== 'undefined' && userVotes['post_' + post.id] === -1) ? 'active' : '' %>" data-value="-1" aria-label="تصويت سلبي">&#9660;</button>
+  </div>
+  <div class="post-content">
+    <div class="post-meta">
+      <a href="/c/<%= post.community_id %>" class="community-tag"><%= post.community_name %></a>
+      <span class="separator">&bull;</span>
+      <a href="/u/<%= post.username %>" class="post-author"><%= post.username %></a>
+      <span class="separator">&bull;</span>
+      <time class="post-time" datetime="<%= post.created_at %>"><%= timeAgo(post.created_at) %></time>
+      <% if (post.edited_at) { %><span class="edited-badge">(معدّل)</span><% } %>
+    </div>
+    <a href="/p/<%= post.id %>" class="post-title"><%= post.title %></a>
+    <% if (post.body) { %>
+      <p class="post-body-preview"><%= post.body.substring(0, 200) %><%= post.body.length > 200 ? '...' : '' %></p>
+    <% } %>
+    <% if (post.media_type === 'image') { %>
+      <div class="post-media">
+        <img src="<%= post.media_url %>" alt="صورة المنشور" loading="lazy">
+      </div>
+    <% } %>
+    <% if (post.media_type === 'video') { %>
+      <div class="post-media">
+        <video src="<%= post.media_url %>" controls preload="metadata"></video>
+      </div>
+    <% } %>
+    <div class="post-actions">
+      <a href="/p/<%= post.id %>" class="action-link">&#128172; <%= typeof post.comment_count !== 'undefined' ? post.comment_count : 0 %> تعليق</a>
+      <button class="action-link share-btn" onclick="copyLink('/p/<%= post.id %>')" aria-label="مشاركة">&#128279; مشاركة</button>
+    </div>
+  </div>
+</article>
