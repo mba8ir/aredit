@@ -253,13 +253,7 @@ router.post('/admin/import', requireAdmin, express.json({ limit: '50mb' }), (req
 router.post('/admin/seed', requireAdmin, async (req, res) => {
   try {
     const bcrypt = require('bcrypt');
-    const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
-
-    if (userCount > 0) {
-      return res.json({ success: false, error: 'قاعدة البيانات تحتوي على بيانات بالفعل. احذف البيانات أولاً.' });
-    }
-
-    // Inline seed logic (same as seed.js but without deleting the DB)
+    // Seed works even if data exists (skips duplicates)
     const usernames = [
       'أبو_عمر', 'نور_الهدى', 'سيف_الحق', 'زهرة_البيان', 'عبدالله_الفصيح',
       'أم_خالد', 'فارس_العروبة', 'ليلى_الأدبية', 'حسن_المؤرخ', 'مريم_النحوية',
@@ -284,7 +278,7 @@ router.post('/admin/seed', requireAdmin, async (req, res) => {
     ];
 
     const hash = await bcrypt.hash('123456', 10);
-    const insertUser = db.prepare('INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)');
+    const insertUser = db.prepare('INSERT OR IGNORE INTO users (username, password_hash, email) VALUES (?, ?, ?)');
     db.transaction(() => {
       for (let i = 0; i < usernames.length; i++) {
         const email = i < 30 ? `user${i}@example.com` : null;
@@ -305,7 +299,7 @@ router.post('/admin/seed', requireAdmin, async (req, res) => {
       { name: 'الطبخ العربي', description: 'وصفات المطبخ العربي', icon: '🍲' }
     ];
 
-    const insertCommunity = db.prepare('INSERT INTO communities (name, description, icon) VALUES (?, ?, ?)');
+    const insertCommunity = db.prepare('INSERT OR IGNORE INTO communities (name, description, icon) VALUES (?, ?, ?)');
     db.transaction(() => {
       communities.forEach(c => insertCommunity.run(c.name, c.description, c.icon));
     })();
