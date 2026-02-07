@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> | راية الفرسان</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .admin-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .admin-header h1 { color: #e94560; margin: 0; }
+    .admin-nav { display: flex; gap: 12px; }
+    .admin-nav a {
+      padding: 8px 16px;
+      background: #16213e;
+      color: #e0e0e0;
+      text-decoration: none;
+      border-radius: 8px;
+      font-family: inherit;
+    }
+    .admin-nav a:hover { background: #e94560; color: white; }
+    .admin-nav a.active { background: #e94560; color: white; }
+    .query-form { margin-bottom: 24px; }
+    .query-form textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 14px;
+      background: #1a1a2e;
+      border: 2px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      resize: vertical;
+      direction: ltr;
+      text-align: left;
+      box-sizing: border-box;
+    }
+    .query-form textarea:focus { border-color: #e94560; outline: none; }
+    .query-form button {
+      margin-top: 12px;
+      padding: 10px 30px;
+      background: #e94560;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .query-form button:hover { background: #d63550; }
+    .query-error {
+      background: #ff4444;
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      direction: ltr;
+      text-align: left;
+      font-family: monospace;
+    }
+    .query-info { color: #aaa; margin-bottom: 12px; }
+    .query-info span { color: #64b5f6; font-weight: bold; }
+    .data-table-wrapper { overflow-x: auto; }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .data-table th {
+      background: #e94560;
+      color: white;
+      padding: 10px 14px;
+      text-align: right;
+      font-weight: 600;
+    }
+    .data-table td {
+      padding: 8px 14px;
+      border-bottom: 1px solid #2a2a4a;
+      color: #e0e0e0;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .data-table tr:hover td { background: #1e2a4a; }
+    .data-table tr:nth-child(even) td { background: #1a1a3e; }
+    .examples { margin-top: 30px; padding: 20px; background: #16213e; border-radius: 12px; }
+    .examples h3 { color: #e94560; margin: 0 0 12px 0; }
+    .examples code {
+      display: block;
+      background: #1a1a2e;
+      padding: 8px 12px;
+      margin: 6px 0;
+      border-radius: 6px;
+      color: #64b5f6;
+      direction: ltr;
+      text-align: left;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .examples code:hover { background: #2a2a4e; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1>💻 استعلام SQL</h1>
+      <div class="admin-nav">
+        <a href="/admin">الجداول</a>
+        <a href="/admin/query" class="active">استعلام SQL</a>
+        <a href="/">الموقع</a>
+        <a href="/admin/logout">خروج</a>
+      </div>
+    </div>
+
+    <form method="POST" action="/admin/query" class="query-form">
+      <textarea name="sql" placeholder="SELECT * FROM users LIMIT 10"><%= sql %></textarea>
+      <button type="submit">تنفيذ ▶</button>
+    </form>
+
+    <% if (error) { %>
+      <div class="query-error"><%= error %></div>
+    <% } %>
+
+    <% if (rows && rows.length > 0) { %>
+      <div class="query-info">النتائج: <span><%= rowCount %></span> سجل</div>
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <% columns.forEach(function(col) { %>
+                <th><%= col %></th>
+              <% }); %>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach(function(row) { %>
+              <tr>
+                <% columns.forEach(function(col) { %>
+                  <td title="<%= row[col] %>"><%= row[col] !== null ? row[col] : '—' %></td>
+                <% }); %>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+
+    <div class="examples">
+      <h3>أمثلة على الاستعلامات:</h3>
+      <code onclick="document.querySelector('textarea[name=sql]').value = this.textContent">SELECT * FROM users LIMIT 20</code>
+      <code onclick="document.querySelector('textarea[name=sql]').value = this.textContent">SELECT COUNT(*) as total FROM posts</code>
+      <code onclick="document.querySelector('textarea[name=sql]').value = this.textContent">SELECT * FROM communities ORDER BY created_at DESC</code>
+      <code onclick="document.querySelector('textarea[name=sql]').value = this.textContent">SELECT p.title, u.username, c.name as community FROM posts p JOIN users u ON p.user_id = u.id JOIN communities c ON p.community_id = c.id LIMIT 20</code>
+      <code onclick="document.querySelector('textarea[name=sql]').value = this.textContent">SELECT username, COUNT(*) as post_count FROM posts p JOIN users u ON p.user_id = u.id GROUP BY u.id ORDER BY post_count DESC LIMIT 10</code>
+    </div>
+  </div>
+</body>
+</html>

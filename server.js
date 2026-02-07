@@ -117,6 +117,7 @@ app.use('/', require('./routes/communities'));
 app.use('/', require('./routes/posts'));
 app.use('/', require('./routes/comments'));
 app.use('/', require('./routes/api'));
+app.use('/', require('./routes/admin'));
 
 // Home page
 app.get('/', (req, res) => {

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> | راية الفرسان</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .admin-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .admin-header h1 { color: #e94560; margin: 0; }
+    .admin-nav { display: flex; gap: 12px; }
+    .admin-nav a {
+      padding: 8px 16px;
+      background: #16213e;
+      color: #e0e0e0;
+      text-decoration: none;
+      border-radius: 8px;
+      font-family: inherit;
+    }
+    .admin-nav a:hover { background: #e94560; color: white; }
+    .table-info { color: #aaa; margin-bottom: 16px; }
+    .table-info span { color: #64b5f6; font-weight: bold; }
+    .data-table-wrapper { overflow-x: auto; margin-bottom: 24px; }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .data-table th {
+      background: #e94560;
+      color: white;
+      padding: 10px 14px;
+      text-align: right;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+    .data-table td {
+      padding: 8px 14px;
+      border-bottom: 1px solid #2a2a4a;
+      color: #e0e0e0;
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .data-table tr:hover td { background: #1e2a4a; }
+    .data-table tr:nth-child(even) td { background: #1a1a3e; }
+    .data-table tr:nth-child(even):hover td { background: #1e2a4a; }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pagination a, .pagination span {
+      padding: 8px 14px;
+      background: #16213e;
+      color: #e0e0e0;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+    .pagination span.current { background: #e94560; color: white; }
+    .pagination a:hover { background: #e94560; color: white; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1>📋 <%= tableName %></h1>
+      <div class="admin-nav">
+        <a href="/admin">الجداول</a>
+        <a href="/admin/query">استعلام SQL</a>
+        <a href="/">الموقع</a>
+        <a href="/admin/logout">خروج</a>
+      </div>
+    </div>
+
+    <div class="table-info">
+      إجمالي السجلات: <span><%= totalRows %></span> | الصفحة <span><%= page %></span> من <span><%= totalPages %></span>
+    </div>
+
+    <% if (rows.length > 0) { %>
+      <div class="data-table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <% columns.forEach(function(col) { %>
+                <th><%= col %></th>
+              <% }); %>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach(function(row) { %>
+              <tr>
+                <% columns.forEach(function(col) { %>
+                  <td title="<%= row[col] %>"><%= row[col] !== null ? row[col] : '—' %></td>
+                <% }); %>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if (totalPages > 1) { %>
+        <div class="pagination">
+          <% if (page > 1) { %>
+            <a href="/admin/table/<%= tableName %>?page=<%= page - 1 %>">السابق</a>
+          <% } %>
+          <% for (let i = 1; i <= totalPages; i++) { %>
+            <% if (i === page) { %>
+              <span class="current"><%= i %></span>
+            <% } else if (Math.abs(i - page) <= 3 || i === 1 || i === totalPages) { %>
+              <a href="/admin/table/<%= tableName %>?page=<%= i %>"><%= i %></a>
+            <% } %>
+          <% } %>
+          <% if (page < totalPages) { %>
+            <a href="/admin/table/<%= tableName %>?page=<%= page + 1 %>">التالي</a>
+          <% } %>
+        </div>
+      <% } %>
+    <% } else { %>
+      <div style="text-align:center; color:#aaa; padding:40px;">الجدول فارغ</div>
+    <% } %>
+  </div>
+</body>
+</html>

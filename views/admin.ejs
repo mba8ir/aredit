@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> | راية الفرسان</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .admin-container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .admin-header h1 { color: #e94560; margin: 0; }
+    .admin-nav { display: flex; gap: 12px; }
+    .admin-nav a {
+      padding: 8px 16px;
+      background: #16213e;
+      color: #e0e0e0;
+      text-decoration: none;
+      border-radius: 8px;
+      font-family: inherit;
+    }
+    .admin-nav a:hover { background: #e94560; color: white; }
+    .admin-nav a.active { background: #e94560; color: white; }
+    .tables-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .table-card {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 24px;
+      transition: transform 0.2s;
+    }
+    .table-card:hover { transform: translateY(-2px); }
+    .table-card a { text-decoration: none; color: inherit; display: block; }
+    .table-card h3 { color: #e94560; margin: 0 0 8px 0; font-size: 20px; }
+    .table-card .count { color: #aaa; font-size: 14px; }
+    .table-card .count span { color: #64b5f6; font-size: 24px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1>🛠️ لوحة التحكم</h1>
+      <div class="admin-nav">
+        <a href="/admin" class="active">الجداول</a>
+        <a href="/admin/query">استعلام SQL</a>
+        <a href="/">الموقع</a>
+        <a href="/admin/logout">خروج</a>
+      </div>
+    </div>
+
+    <div class="tables-grid">
+      <% tables.forEach(function(table) { %>
+        <div class="table-card">
+          <a href="/admin/table/<%= table %>">
+            <h3><%= table %></h3>
+            <div class="count">عدد السجلات: <span><%= stats[table] %></span></div>
+          </a>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</body>
+</html>

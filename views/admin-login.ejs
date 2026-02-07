@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> | راية الفرسان</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .admin-login-card {
+      max-width: 400px;
+      margin: 100px auto;
+      background: var(--card-bg, #16213e);
+      border-radius: 12px;
+      padding: 40px;
+    }
+    .admin-login-card h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      color: #e94560;
+    }
+    .admin-login-card input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      background: #1a1a2e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .admin-login-card button {
+      width: 100%;
+      padding: 12px;
+      background: #e94560;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .admin-login-card button:hover { background: #d63550; }
+    .admin-error {
+      background: #ff4444;
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-login-card">
+    <h1>🔐 لوحة التحكم</h1>
+    <% if (error) { %>
+      <div class="admin-error"><%= error %></div>
+    <% } %>
+    <form method="POST" action="/admin/login">
+      <input type="password" name="password" placeholder="كلمة مرور المدير" required autofocus>
+      <button type="submit">دخول</button>
+    </form>
+  </div>
+</body>
+</html>
