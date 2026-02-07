@@ -51,6 +51,70 @@
       </div>
     </div>
 
+    <div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
+      <button onclick="seedDB()" id="seed-btn" style="padding:12px 24px; background:#4CAF50; color:white; border:none; border-radius:8px; font-family:inherit; font-size:16px; cursor:pointer;">🌱 ملء قاعدة البيانات (بيانات تجريبية)</button>
+      <button onclick="clearDB()" id="clear-btn" style="padding:12px 24px; background:#f44336; color:white; border:none; border-radius:8px; font-family:inherit; font-size:16px; cursor:pointer;">🗑️ حذف جميع البيانات</button>
+    </div>
+    <div id="seed-status" style="margin-bottom:16px; padding:12px; border-radius:8px; display:none;"></div>
+
+    <script>
+      async function seedDB() {
+        if (!confirm('هل تريد ملء قاعدة البيانات ببيانات تجريبية؟')) return;
+        const btn = document.getElementById('seed-btn');
+        const status = document.getElementById('seed-status');
+        btn.disabled = true;
+        btn.textContent = '⏳ جاري الملء...';
+        try {
+          const res = await fetch('/admin/seed', { method: 'POST', headers: {'Content-Type': 'application/json'} });
+          const data = await res.json();
+          status.style.display = 'block';
+          if (data.success) {
+            status.style.background = '#4CAF50';
+            status.textContent = data.message;
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            status.style.background = '#f44336';
+            status.textContent = data.error;
+            btn.disabled = false;
+            btn.textContent = '🌱 ملء قاعدة البيانات';
+          }
+        } catch(e) {
+          status.style.display = 'block';
+          status.style.background = '#f44336';
+          status.textContent = 'خطأ: ' + e.message;
+          btn.disabled = false;
+          btn.textContent = '🌱 ملء قاعدة البيانات';
+        }
+      }
+      async function clearDB() {
+        if (!confirm('⚠️ هل أنت متأكد؟ سيتم حذف جميع البيانات نهائياً!')) return;
+        if (!confirm('⚠️⚠️ تأكيد أخير: لا يمكن التراجع عن هذا!')) return;
+        const btn = document.getElementById('clear-btn');
+        const status = document.getElementById('seed-status');
+        btn.disabled = true;
+        btn.textContent = '⏳ جاري الحذف...';
+        try {
+          const res = await fetch('/admin/clear', { method: 'POST', headers: {'Content-Type': 'application/json'} });
+          const data = await res.json();
+          status.style.display = 'block';
+          if (data.success) {
+            status.style.background = '#FF9800';
+            status.textContent = data.message;
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            status.style.background = '#f44336';
+            status.textContent = data.error;
+          }
+        } catch(e) {
+          status.style.display = 'block';
+          status.style.background = '#f44336';
+          status.textContent = 'خطأ: ' + e.message;
+        }
+        btn.disabled = false;
+        btn.textContent = '🗑️ حذف جميع البيانات';
+      }
+    </script>
+
     <div class="tables-grid">
       <% tables.forEach(function(table) { %>
         <div class="table-card">
