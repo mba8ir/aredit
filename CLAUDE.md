@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AREDIT ("راية الفرسان") is an Arabic-language Reddit-style community forum. Server-rendered with Node.js/Express, SQLite database, EJS templates. All UI text is Arabic with full RTL support.
+RAYAT AL-FURSAN ("راية الفرسان") is an Arabic-language Reddit-style community forum. Server-rendered with Node.js/Express, SQLite database, EJS templates. All UI text is Arabic with full RTL support.
 
 ## Commands
 
@@ -36,7 +36,7 @@ Home page (`/`), search (`/search`), communities list (`/communities`), RSS feed
 
 Key tables: `users`, `communities`, `community_follows`, `posts`, `comments`, `votes` (polymorphic via `votable_type`/`votable_id`), `community_admins`, `bookmarks`, `reports`, `notifications`, `password_resets`. Virtual table `posts_fts` for search.
 
-All queries use `better-sqlite3`'s synchronous API with parameterized statements. The database file is `aredit.db` in the project root.
+All queries use `better-sqlite3`'s synchronous API with parameterized statements. The database file is `rayat.db` in the project root.
 
 ### Templates
 

@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: 'aredit',
+    name: 'rayat-al-fursan',
     script: 'server.js',
     instances: 1,
     autorestart: true,

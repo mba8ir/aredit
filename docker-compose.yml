@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  aredit:
+  rayat-al-fursan:
     build: .
     ports:
       - "3000:3000"
     volumes:
-      - ./aredit.db:/app/aredit.db
+      - ./rayat.db:/app/rayat.db
       - ./uploads:/app/uploads
     env_file:
       - .env

@@ -1,7 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const db = new Database(path.join(__dirname, 'aredit.db'));
+const db = new Database(path.join(__dirname, 'rayat.db'));
 
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -159,6 +159,8 @@ const migrations = [
   `ALTER TABLE comments ADD COLUMN edited_at DATETIME`,
   `ALTER TABLE users ADD COLUMN avatar_url TEXT`,
   `ALTER TABLE users ADD COLUMN bio TEXT`,
+  `ALTER TABLE posts ADD COLUMN post_type TEXT DEFAULT 'text'`,
+  `ALTER TABLE posts ADD COLUMN link_url TEXT`,
 ];
 
 for (const sql of migrations) {

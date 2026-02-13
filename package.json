@@ -1,7 +1,7 @@
 {
-  "name": "aredit",
+  "name": "rayat-al-fursan",
   "version": "1.0.0",
-  "description": "Arabic Reddit-style forum",
+  "description": "راية الفرسان - Arabic community forum",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

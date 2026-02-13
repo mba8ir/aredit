@@ -3,6 +3,9 @@ node_modules/
 aredit.db
 aredit.db-wal
 aredit.db-shm
+rayat.db
+rayat.db-wal
+rayat.db-shm
 uploads/
 *.log
 .DS_Store

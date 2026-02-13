@@ -1,10 +1,11 @@
-const Database = require('better-sqlite3');
+
+  claudeconst Database = require('better-sqlite3');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const fs = require('fs');
 
 // Delete existing DB
-const dbPath = path.join(__dirname, 'aredit.db');
+const dbPath = path.join(__dirname, 'rayat.db');
 if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
 
 // Re-initialize

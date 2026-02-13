@@ -178,7 +178,7 @@ router.get('/admin/export', requireAdmin, (req, res) => {
     }
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', 'attachment; filename=aredit-export.json');
+    res.setHeader('Content-Disposition', 'attachment; filename=rayat-al-fursan-export.json');
     res.send(JSON.stringify(data, null, 2));
   } catch (e) {
     res.status(500).json({ error: e.message });
