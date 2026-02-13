@@ -49,7 +49,11 @@
                 <a href="/c/<%= post.community_id %>" class="community-tag"><%= post.community_name %></a>
                 <time class="post-time" datetime="<%= post.created_at %>"><%= timeAgo(post.created_at) %></time>
               </div>
-              <a href="/p/<%= post.id %>" class="post-title"><%= post.title %></a>
+              <% if (post.post_type === 'link' && post.link_url) { %>
+                <a href="<%= post.link_url %>" class="post-title" target="_blank" rel="noopener">&#128279; <%= post.title %></a>
+              <% } else { %>
+                <a href="/p/<%= post.id %>" class="post-title"><%= post.title %></a>
+              <% } %>
               <div class="post-stats">
                 <span>&#9650; <%= post.score %></span>
                 <span>&#128172; <%= post.comment_count %></span>

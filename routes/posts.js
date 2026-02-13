@@ -38,43 +38,119 @@ router.get('/c/:id/new', (req, res) => {
   res.render('create-post', { community, error: null, pageTitle: 'منشور جديد' });
 });
 
+// Fetch link title helper
+async function fetchLinkTitle(url) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RayatBot/1.0)' }
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const html = await res.text();
+    // Extract <title> tag
+    const match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (match && match[1]) return match[1].trim().substring(0, 300);
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// API: fetch link title for preview
+router.post('/api/fetch-link-title', async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.json({ title: null });
+
+  try {
+    const urlObj = new URL(url);
+    if (!['http:', 'https:'].includes(urlObj.protocol)) return res.json({ title: null });
+  } catch (e) {
+    return res.json({ title: null });
+  }
+
+  const title = await fetchLinkTitle(url);
+  res.json({ title });
+});
+
 // Create post
-router.post('/c/:id/new', upload.single('media'), (req, res) => {
+router.post('/c/:id/new', upload.single('media'), async (req, res) => {
   if (!res.locals.currentUser) return res.redirect('/login');
 
-  const { title, body } = req.body;
+  const { title, body, post_type, link_url } = req.body;
   const communityId = parseInt(req.params.id);
+  const community = db.prepare('SELECT * FROM communities WHERE id = ?').get(communityId);
+  if (!community) return res.status(404).render('error', { message: 'المجتمع غير موجود', pageTitle: '404' });
 
-  if (!title || !title.trim()) {
-    const community = db.prepare('SELECT * FROM communities WHERE id = ?').get(communityId);
-    return res.render('create-post', { community, error: 'العنوان مطلوب', pageTitle: 'منشور جديد' });
-  }
+  const type = ['text', 'image', 'link'].includes(post_type) ? post_type : 'text';
 
-  if (title.trim().length > 300) {
-    const community = db.prepare('SELECT * FROM communities WHERE id = ?').get(communityId);
-    return res.render('create-post', { community, error: 'العنوان طويل جداً (الحد الأقصى 300 حرف)', pageTitle: 'منشور جديد' });
-  }
-
-  if (body && body.length > 40000) {
-    const community = db.prepare('SELECT * FROM communities WHERE id = ?').get(communityId);
-    return res.render('create-post', { community, error: 'المحتوى طويل جداً (الحد الأقصى 40000 حرف)', pageTitle: 'منشور جديد' });
-  }
-
+  let finalTitle = title ? title.trim() : '';
+  let finalBody = null;
   let mediaType = null;
   let mediaUrl = null;
+  let linkUrl = null;
 
-  if (req.file) {
-    if (req.file.mimetype.startsWith('video/')) {
-      mediaType = 'video';
-    } else {
-      mediaType = 'image';
+  if (type === 'text') {
+    // Text post: title required, body optional (can contain links), no image
+    if (!finalTitle) {
+      return res.render('create-post', { community, error: 'العنوان مطلوب', pageTitle: 'منشور جديد' });
     }
+    if (finalTitle.length > 300) {
+      return res.render('create-post', { community, error: 'العنوان طويل جداً (الحد الأقصى 300 حرف)', pageTitle: 'منشور جديد' });
+    }
+    if (body && body.length > 40000) {
+      return res.render('create-post', { community, error: 'المحتوى طويل جداً (الحد الأقصى 40000 حرف)', pageTitle: 'منشور جديد' });
+    }
+    finalBody = body || null;
+    // Ignore any uploaded file for text posts
+
+  } else if (type === 'image') {
+    // Image post: title required, image required, no body
+    if (!finalTitle) {
+      return res.render('create-post', { community, error: 'العنوان مطلوب', pageTitle: 'منشور جديد' });
+    }
+    if (finalTitle.length > 300) {
+      return res.render('create-post', { community, error: 'العنوان طويل جداً (الحد الأقصى 300 حرف)', pageTitle: 'منشور جديد' });
+    }
+    if (!req.file) {
+      return res.render('create-post', { community, error: 'الصورة مطلوبة لمنشور من نوع صورة', pageTitle: 'منشور جديد' });
+    }
+    if (!req.file.mimetype.startsWith('image/')) {
+      return res.render('create-post', { community, error: 'يُسمح بالصور فقط لهذا النوع من المنشورات', pageTitle: 'منشور جديد' });
+    }
+    mediaType = 'image';
     mediaUrl = '/uploads/' + req.file.filename;
+    // No body for image posts
+
+  } else if (type === 'link') {
+    // Link post: link_url required, title extracted from link, no body/image
+    if (!link_url || !link_url.trim()) {
+      return res.render('create-post', { community, error: 'الرابط مطلوب', pageTitle: 'منشور جديد' });
+    }
+    const trimmedUrl = link_url.trim();
+    try {
+      const urlObj = new URL(trimmedUrl);
+      if (!['http:', 'https:'].includes(urlObj.protocol)) {
+        return res.render('create-post', { community, error: 'الرابط يجب أن يبدأ بـ http:// أو https://', pageTitle: 'منشور جديد' });
+      }
+    } catch (e) {
+      return res.render('create-post', { community, error: 'صيغة الرابط غير صحيحة', pageTitle: 'منشور جديد' });
+    }
+    linkUrl = trimmedUrl;
+    // Extract title from the link
+    finalTitle = await fetchLinkTitle(trimmedUrl);
+    if (!finalTitle) {
+      // Fallback: use the domain as title
+      try { finalTitle = new URL(trimmedUrl).hostname; } catch (e) { finalTitle = trimmedUrl; }
+    }
+    // No body for link posts
   }
 
   const result = db.prepare(
-    'INSERT INTO posts (user_id, community_id, title, body, media_type, media_url) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(res.locals.currentUser.id, communityId, title.trim(), body || null, mediaType, mediaUrl);
+    'INSERT INTO posts (user_id, community_id, title, body, media_type, media_url, post_type, link_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(res.locals.currentUser.id, communityId, finalTitle, finalBody, mediaType, mediaUrl, type, linkUrl);
 
   res.redirect('/p/' + result.lastInsertRowid);
 });
@@ -106,6 +182,11 @@ router.post('/p/:id/edit', (req, res) => {
     return res.status(403).render('error', { message: 'ليس لديك صلاحية التعديل', pageTitle: 'خطأ' });
   }
 
+  // Link posts cannot be edited
+  if (post.post_type === 'link') {
+    return res.redirect('/p/' + post.id);
+  }
+
   const { title, body } = req.body;
 
   if (!title || !title.trim()) {
@@ -116,12 +197,15 @@ router.post('/p/:id/edit', (req, res) => {
     return res.render('edit-post', { post, error: 'العنوان طويل جداً', pageTitle: 'تعديل المنشور' });
   }
 
-  if (body && body.length > 40000) {
+  // Only text posts can have body
+  const finalBody = (post.post_type === 'text') ? (body || null) : null;
+
+  if (finalBody && finalBody.length > 40000) {
     return res.render('edit-post', { post, error: 'المحتوى طويل جداً', pageTitle: 'تعديل المنشور' });
   }
 
   db.prepare('UPDATE posts SET title = ?, body = ?, edited_at = CURRENT_TIMESTAMP WHERE id = ?')
-    .run(title.trim(), body || null, post.id);
+    .run(title.trim(), finalBody, post.id);
 
   res.redirect('/p/' + post.id);
 });

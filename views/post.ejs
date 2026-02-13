@@ -33,6 +33,9 @@
           <% if (post.edited_at) { %><span class="edited-badge">(معدّل)</span><% } %>
         </div>
         <h1 class="post-title-full"><%= post.title %></h1>
+        <% if (post.post_type === 'link' && post.link_url) { %>
+          <p style="margin-bottom:0.75rem;"><a href="<%= post.link_url %>" target="_blank" rel="noopener" style="font-size:0.9rem;direction:ltr;display:inline-block;word-break:break-all;">&#128279; <%= post.link_url %></a></p>
+        <% } %>
         <% if (post.body) { %>
           <div class="post-body-full"><%= post.body %></div>
         <% } %>
@@ -78,7 +81,7 @@
 
       <div class="comments-list">
         <% comments.forEach(comment => { %>
-          <%- include('partials/comment', { comment, userVotes }) %>
+          <%- include('partials/comment', { comment, userVotes, depth: 0 }) %>
         <% }) %>
       </div>
     </section>

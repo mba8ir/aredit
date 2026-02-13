@@ -13,26 +13,276 @@
   <main class="container">
     <div class="auth-card">
       <h1>تسجيل حساب جديد</h1>
+
       <% if (error) { %>
         <div class="alert alert-error"><%= error %></div>
       <% } %>
-      <form method="POST" action="/register">
+
+      <!-- Step Indicator -->
+      <div class="signup-steps">
+        <div class="step-dot active" id="dot-1">1</div>
+        <div class="step-line" id="line-1"></div>
+        <div class="step-dot" id="dot-2">2</div>
+        <div class="step-line" id="line-2"></div>
+        <div class="step-dot" id="dot-3">3</div>
+      </div>
+
+      <!-- Step 1: Username & Password -->
+      <div class="step-content active" id="step-1">
+        <p class="step-description">اختر اسم المستخدم وكلمة المرور</p>
         <div class="form-group">
-          <label for="username">اسم المستخدم (بالعربية)</label>
-          <input type="text" id="username" name="username" required placeholder="مثال: أبو_عمر" dir="rtl">
+          <label for="reg-username">اسم المستخدم (بالعربية)</label>
+          <input type="text" id="reg-username" required placeholder="مثال: أبو_عمر" dir="rtl">
+          <p class="form-hint">حروف عربية وشرطة سفلية فقط، بحد أقصى 30 حرف</p>
         </div>
         <div class="form-group">
-          <label for="password">كلمة المرور</label>
-          <input type="password" id="password" name="password" required minlength="8">
+          <label for="reg-password">كلمة المرور</label>
+          <input type="password" id="reg-password" required minlength="8">
+          <p class="form-hint">8 أحرف على الأقل، يجب أن تحتوي على حروف وأرقام</p>
         </div>
+        <div id="step1-error" class="alert alert-error" style="display:none;"></div>
+        <button type="button" class="btn btn-primary btn-block" onclick="goToStep(2)">التالي</button>
+      </div>
+
+      <!-- Step 2: Email -->
+      <div class="step-content" id="step-2">
+        <p class="step-description">أضف بريدك الإلكتروني (اختياري)</p>
         <div class="form-group">
-          <label for="email">البريد الإلكتروني (اختياري - مطلوب لاستعادة كلمة المرور)</label>
-          <input type="email" id="email" name="email" dir="ltr" placeholder="example@email.com">
+          <label for="reg-email">البريد الإلكتروني</label>
+          <input type="email" id="reg-email" dir="ltr" placeholder="example@email.com">
+          <p class="form-hint">مطلوب لاستعادة كلمة المرور لاحقاً</p>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">تسجيل</button>
+        <div id="step2-error" class="alert alert-error" style="display:none;"></div>
+        <div class="step-actions">
+          <button type="button" class="btn btn-primary" id="send-code-btn" onclick="sendCode()">إرسال رمز التحقق</button>
+          <button type="button" class="btn-skip" onclick="skipEmail()">تخطي بدون بريد</button>
+        </div>
+        <button type="button" class="step-back" onclick="goToStep(1)">← رجوع</button>
+      </div>
+
+      <!-- Step 3: Verification Code -->
+      <div class="step-content" id="step-3">
+        <p class="step-description">أدخل رمز التحقق المرسل إلى بريدك</p>
+        <div class="verification-code-input" id="code-inputs">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+          <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+        </div>
+        <div id="step3-error" class="alert alert-error" style="display:none;"></div>
+        <div class="step-actions">
+          <button type="button" class="btn btn-primary" id="verify-btn" onclick="verifyCode()">تحقق وأكمل التسجيل</button>
+          <button type="button" class="btn-skip" onclick="skipVerification()">تخطي التحقق</button>
+        </div>
+        <button type="button" class="step-back" onclick="goToStep(2)">← رجوع</button>
+      </div>
+
+      <!-- Hidden form that actually submits -->
+      <form method="POST" action="/register" id="register-form" style="display:none;">
+        <input type="hidden" name="username" id="form-username">
+        <input type="hidden" name="password" id="form-password">
+        <input type="hidden" name="email" id="form-email">
       </form>
+
       <p class="auth-switch">لديك حساب؟ <a href="/login">سجل دخولك</a></p>
     </div>
   </main>
+
+  <script>
+    var currentStep = 1;
+    var emailVerified = false;
+
+    function showError(stepNum, msg) {
+      var el = document.getElementById('step' + stepNum + '-error');
+      el.textContent = msg;
+      el.style.display = 'block';
+    }
+    function hideError(stepNum) {
+      var el = document.getElementById('step' + stepNum + '-error');
+      el.style.display = 'none';
+    }
+
+    function updateSteps(step) {
+      currentStep = step;
+      for (var i = 1; i <= 3; i++) {
+        var dot = document.getElementById('dot-' + i);
+        var content = document.getElementById('step-' + i);
+        dot.classList.remove('active', 'done');
+        content.classList.remove('active');
+        if (i < step) dot.classList.add('done');
+        else if (i === step) dot.classList.add('active');
+      }
+      for (var j = 1; j <= 2; j++) {
+        var line = document.getElementById('line-' + j);
+        line.classList.remove('active', 'done');
+        if (j < step) line.classList.add('done');
+        else if (j === step - 1) line.classList.add('active');
+      }
+      document.getElementById('step-' + step).classList.add('active');
+    }
+
+    function goToStep(step) {
+      if (step === 2) {
+        // Validate step 1
+        var username = document.getElementById('reg-username').value.trim();
+        var password = document.getElementById('reg-password').value;
+        hideError(1);
+
+        if (!username || !password) {
+          showError(1, 'اسم المستخدم وكلمة المرور مطلوبان');
+          return;
+        }
+        if (username.length > 30) {
+          showError(1, 'اسم المستخدم طويل جداً (الحد الأقصى 30 حرف)');
+          return;
+        }
+        var arabicRegex = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF_]+$/;
+        if (!arabicRegex.test(username)) {
+          showError(1, 'اسم المستخدم يجب أن يحتوي على حروف عربية وشرطة سفلية فقط');
+          return;
+        }
+        if (password.length < 8) {
+          showError(1, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+          return;
+        }
+        if (!/[a-zA-Z\u0600-\u06FF]/.test(password) || !/[0-9]/.test(password)) {
+          showError(1, 'كلمة المرور يجب أن تحتوي على حروف وأرقام');
+          return;
+        }
+      }
+      updateSteps(step);
+    }
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function sendCode() {
+      var email = document.getElementById('reg-email').value.trim();
+      hideError(2);
+      if (!email) {
+        showError(2, 'أدخل البريد الإلكتروني أولاً');
+        return;
+      }
+      if (!isValidEmail(email)) {
+        showError(2, 'صيغة البريد الإلكتروني غير صحيحة');
+        return;
+      }
+      var btn = document.getElementById('send-code-btn');
+      btn.disabled = true;
+      btn.textContent = 'جاري الإرسال...';
+
+      fetch('/register/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        btn.disabled = false;
+        btn.textContent = 'إرسال رمز التحقق';
+        if (data.success) {
+          updateSteps(3);
+          // Focus first code input
+          var firstInput = document.querySelector('#code-inputs input');
+          if (firstInput) firstInput.focus();
+        } else {
+          showError(2, data.error || 'حدث خطأ');
+        }
+      })
+      .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'إرسال رمز التحقق';
+        showError(2, 'حدث خطأ في الاتصال');
+      });
+    }
+
+    function skipEmail() {
+      submitRegistration('', false);
+    }
+
+    function getCodeValue() {
+      var inputs = document.querySelectorAll('#code-inputs input');
+      var code = '';
+      for (var i = 0; i < inputs.length; i++) {
+        code += inputs[i].value;
+      }
+      return code;
+    }
+
+    function verifyCode() {
+      var code = getCodeValue();
+      hideError(3);
+      if (code.length !== 6) {
+        showError(3, 'أدخل الرمز المكون من 6 أرقام');
+        return;
+      }
+      var btn = document.getElementById('verify-btn');
+      btn.disabled = true;
+      btn.textContent = 'جاري التحقق...';
+
+      fetch('/register/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        btn.disabled = false;
+        btn.textContent = 'تحقق وأكمل التسجيل';
+        if (data.success) {
+          emailVerified = true;
+          submitRegistration(document.getElementById('reg-email').value.trim(), true);
+        } else {
+          showError(3, data.error || 'حدث خطأ');
+        }
+      })
+      .catch(function() {
+        btn.disabled = false;
+        btn.textContent = 'تحقق وأكمل التسجيل';
+        showError(3, 'حدث خطأ في الاتصال');
+      });
+    }
+
+    function skipVerification() {
+      submitRegistration(document.getElementById('reg-email').value.trim(), false);
+    }
+
+    function submitRegistration(email) {
+      document.getElementById('form-username').value = document.getElementById('reg-username').value.trim();
+      document.getElementById('form-password').value = document.getElementById('reg-password').value;
+      document.getElementById('form-email').value = email || '';
+      document.getElementById('register-form').submit();
+    }
+
+    // Auto-advance code inputs
+    (function() {
+      var inputs = document.querySelectorAll('#code-inputs input');
+      inputs.forEach(function(input, idx) {
+        input.addEventListener('input', function() {
+          this.value = this.value.replace(/[^0-9]/g, '');
+          if (this.value && idx < inputs.length - 1) {
+            inputs[idx + 1].focus();
+          }
+        });
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Backspace' && !this.value && idx > 0) {
+            inputs[idx - 1].focus();
+          }
+        });
+        input.addEventListener('paste', function(e) {
+          e.preventDefault();
+          var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+          for (var i = 0; i < Math.min(pasted.length, inputs.length); i++) {
+            inputs[i].value = pasted[i];
+          }
+          var focusIdx = Math.min(pasted.length, inputs.length - 1);
+          inputs[focusIdx].focus();
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

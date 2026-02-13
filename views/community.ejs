@@ -84,8 +84,13 @@
                   <time class="post-time" datetime="<%= post.created_at %>"><%= timeAgo(post.created_at) %></time>
                   <% if (post.edited_at) { %><span class="edited-badge">(معدّل)</span><% } %>
                 </div>
-                <a href="/p/<%= post.id %>" class="post-title"><%= post.title %></a>
-                <% if (post.body) { %>
+                <% if (post.post_type === 'link' && post.link_url) { %>
+                  <a href="<%= post.link_url %>" class="post-title" target="_blank" rel="noopener">&#128279; <%= post.title %></a>
+                  <p class="post-body-preview" style="direction:ltr;text-align:right;"><%= post.link_url.length > 60 ? post.link_url.substring(0, 60) + '...' : post.link_url %></p>
+                <% } else { %>
+                  <a href="/p/<%= post.id %>" class="post-title"><%= post.title %></a>
+                <% } %>
+                <% if (post.body && post.post_type !== 'link') { %>
                   <p class="post-body-preview"><%= post.body.substring(0, 200) %><%= post.body.length > 200 ? '...' : '' %></p>
                 <% } %>
                 <% if (post.media_type === 'image') { %>

@@ -1,3 +1,19 @@
+// Toggle thread collapse/expand
+function toggleThread(btn) {
+  var children = btn.nextElementSibling;
+  if (!children || !children.classList.contains('comment-children')) return;
+  var count = btn.dataset.count || '';
+  var isCollapsed = children.classList.contains('collapsed');
+  children.classList.toggle('collapsed');
+  if (isCollapsed) {
+    btn.textContent = 'إخفاء الردود (' + count + ')';
+    btn.setAttribute('aria-expanded', 'true');
+  } else {
+    btn.textContent = 'عرض الردود (' + count + ')';
+    btn.setAttribute('aria-expanded', 'false');
+  }
+}
+
 // Toggle reply form
 function toggleReply(commentId) {
   const form = document.getElementById('reply-form-' + commentId);

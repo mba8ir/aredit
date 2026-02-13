@@ -1,3 +1,4 @@
+<% const _depth = typeof depth !== 'undefined' ? depth : 0; %>
 <div class="comment" id="comment-<%= comment.id %>">
   <div class="comment-header">
     <div class="comment-vote" data-type="comment" data-id="<%= comment.id %>" role="group" aria-label="تصويت">
@@ -28,9 +29,13 @@
     </form>
   </div>
   <% if (comment.children && comment.children.length > 0) { %>
-    <div class="comment-children">
+    <% const _childCount = comment.children.length; %>
+    <% if (_depth >= 1) { %>
+      <button class="thread-toggle" onclick="toggleThread(this)" aria-expanded="false" data-count="<%= _childCount %>">عرض الردود (<%= _childCount %>)</button>
+    <% } %>
+    <div class="comment-children<%= _depth >= 1 ? ' collapsed' : '' %>">
       <% comment.children.forEach(child => { %>
-        <%- include('comment', { comment: child, userVotes: typeof userVotes !== 'undefined' ? userVotes : {} }) %>
+        <%- include('comment', { comment: child, userVotes: typeof userVotes !== 'undefined' ? userVotes : {}, depth: _depth + 1 }) %>
       <% }) %>
     </div>
   <% } %>

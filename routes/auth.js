@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const path = require('path');
 const db = require('../db');
+const { sendPasswordResetEmail, sendVerificationEmail } = require('../mail');
 const router = express.Router();
 
 // Rate limiters for auth endpoints
@@ -55,6 +56,60 @@ router.get('/register', (req, res) => {
   res.render('register', { error: null, pageTitle: 'تسجيل' });
 });
 
+// Send verification code for registration email
+router.post('/register/send-code', authLimiter, (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.json({ success: false, error: 'البريد الإلكتروني مطلوب' });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.json({ success: false, error: 'صيغة البريد الإلكتروني غير صحيحة' });
+  }
+
+  const code = String(crypto.randomInt(100000, 999999));
+  req.session.pendingVerification = {
+    email,
+    code,
+    attempts: 0,
+    expiresAt: Date.now() + 15 * 60 * 1000
+  };
+
+  sendVerificationEmail(email, code);
+  res.json({ success: true, message: 'تم إرسال رمز التحقق' });
+});
+
+// Verify registration email code
+router.post('/register/verify-code', authLimiter, (req, res) => {
+  const { code } = req.body;
+  const pending = req.session.pendingVerification;
+
+  if (!pending) {
+    return res.json({ success: false, error: 'لم يتم طلب رمز تحقق' });
+  }
+
+  if (Date.now() > pending.expiresAt) {
+    delete req.session.pendingVerification;
+    return res.json({ success: false, error: 'انتهت صلاحية الرمز، أعد الإرسال' });
+  }
+
+  if (pending.attempts >= 5) {
+    delete req.session.pendingVerification;
+    return res.json({ success: false, error: 'تم تجاوز عدد المحاولات المسموح بها' });
+  }
+
+  pending.attempts++;
+
+  if (code !== pending.code) {
+    return res.json({ success: false, error: 'رمز التحقق غير صحيح' });
+  }
+
+  pending.verified = true;
+  res.json({ success: true, message: 'تم التحقق بنجاح' });
+});
+
 // Register handler
 router.post('/register', authLimiter, async (req, res) => {
   const { username, password, email } = req.body;
@@ -85,6 +140,14 @@ router.post('/register', authLimiter, async (req, res) => {
     return res.render('register', { error: 'اسم المستخدم يحتوي على كلمات غير مسموح بها', pageTitle: 'تسجيل' });
   }
 
+  // Email format validation
+  if (email && email.trim()) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.render('register', { error: 'صيغة البريد الإلكتروني غير صحيحة', pageTitle: 'تسجيل' });
+    }
+  }
+
   // Password strength
   if (!isPasswordStrong(password)) {
     return res.render('register', { error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حروف وأرقام', pageTitle: 'تسجيل' });
@@ -97,7 +160,12 @@ router.post('/register', authLimiter, async (req, res) => {
 
   try {
     const hash = await bcrypt.hash(password, 12);
-    const result = db.prepare('INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)').run(username, hash, email || null);
+    let emailVerified = 0;
+    if (email && req.session.pendingVerification && req.session.pendingVerification.email === email && req.session.pendingVerification.verified) {
+      emailVerified = 1;
+    }
+    const result = db.prepare('INSERT INTO users (username, password_hash, email, email_verified) VALUES (?, ?, ?, ?)').run(username, hash, email || null, emailVerified);
+    delete req.session.pendingVerification;
     req.session.userId = result.lastInsertRowid;
     res.redirect('/');
   } catch (err) {
@@ -174,8 +242,8 @@ router.post('/forgot-password', resetLimiter, (req, res) => {
 
   db.prepare('INSERT INTO password_resets (user_id, token, code, expires_at) VALUES (?, ?, ?, ?)').run(user.id, token, code, expiresAt);
 
-  // In production, send email. For now, log to console.
-  console.log(`[Password Reset] Code for ${email}: ${code}`);
+  // Send email (falls back to console.log if SMTP not configured)
+  sendPasswordResetEmail(email, code);
 
   res.redirect(`/verify-code/${token}`);
 });

@@ -16,45 +16,186 @@
       <% if (error) { %>
         <div class="alert alert-error"><%= error %></div>
       <% } %>
-      <form method="POST" action="/c/<%= community.id %>/new" enctype="multipart/form-data">
-        <div class="form-group">
+
+      <!-- Post Type Tabs -->
+      <div class="post-type-tabs">
+        <button type="button" class="post-type-tab active" onclick="switchPostType('text')" id="tab-text">&#128196; نص</button>
+        <button type="button" class="post-type-tab" onclick="switchPostType('image')" id="tab-image">&#128247; صورة</button>
+        <button type="button" class="post-type-tab" onclick="switchPostType('link')" id="tab-link">&#128279; رابط</button>
+      </div>
+
+      <form method="POST" action="/c/<%= community.id %>/new" enctype="multipart/form-data" id="create-post-form">
+        <input type="hidden" name="post_type" id="post-type-input" value="text">
+
+        <!-- Title (shown for text and image types) -->
+        <div class="form-group" id="title-group">
           <label for="title">العنوان</label>
           <input type="text" id="title" name="title" required dir="rtl" placeholder="عنوان المنشور" maxlength="300">
           <div class="char-counter"><span id="title-count">0</span>/300</div>
         </div>
-        <div class="form-group">
+
+        <!-- Link URL (shown only for link type) -->
+        <div class="form-group" id="link-group" style="display:none;">
+          <label for="link_url">الرابط</label>
+          <input type="url" id="link_url" name="link_url" dir="ltr" placeholder="https://example.com">
+          <p class="form-hint">سيتم استخراج العنوان تلقائياً من الرابط</p>
+          <div id="link-preview" style="display:none;">
+            <p style="color:#888;font-size:0.85rem;margin-top:0.5rem;">العنوان المستخرج: <span id="link-title-preview" style="color:#64b5f6;"></span></p>
+          </div>
+        </div>
+
+        <!-- Body (shown only for text type) -->
+        <div class="form-group" id="body-group">
           <label for="body">المحتوى (اختياري)</label>
           <textarea id="body" name="body" rows="6" dir="rtl" placeholder="اكتب محتوى منشورك هنا..." maxlength="40000"></textarea>
           <div class="char-counter"><span id="body-count">0</span>/40000</div>
         </div>
-        <div class="form-group">
-          <label for="media">صورة أو فيديو (اختياري)</label>
-          <input type="file" id="media" name="media" accept="image/*,video/mp4,video/webm">
+
+        <!-- Media (shown only for image type) -->
+        <div class="form-group" id="media-group" style="display:none;">
+          <label for="media">اختر صورة</label>
+          <input type="file" id="media" name="media" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
           <div class="file-preview" id="media-preview"></div>
         </div>
+
         <button type="submit" class="btn btn-primary btn-block">نشر</button>
       </form>
     </div>
   </main>
   <script>
+    var currentPostType = 'text';
+    var fetchingTitle = false;
+
+    function switchPostType(type) {
+      currentPostType = type;
+      document.getElementById('post-type-input').value = type;
+
+      // Update tab styles
+      document.querySelectorAll('.post-type-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.getElementById('tab-' + type).classList.add('active');
+
+      // Show/hide fields based on type
+      var titleGroup = document.getElementById('title-group');
+      var bodyGroup = document.getElementById('body-group');
+      var mediaGroup = document.getElementById('media-group');
+      var linkGroup = document.getElementById('link-group');
+      var titleInput = document.getElementById('title');
+      var bodyInput = document.getElementById('body');
+      var mediaInput = document.getElementById('media');
+      var linkInput = document.getElementById('link_url');
+
+      // Reset visibility
+      titleGroup.style.display = 'none';
+      bodyGroup.style.display = 'none';
+      mediaGroup.style.display = 'none';
+      linkGroup.style.display = 'none';
+
+      // Clear irrelevant fields
+      if (type === 'text') {
+        titleGroup.style.display = 'block';
+        bodyGroup.style.display = 'block';
+        titleInput.required = true;
+        mediaInput.value = '';
+        linkInput.value = '';
+      } else if (type === 'image') {
+        titleGroup.style.display = 'block';
+        mediaGroup.style.display = 'block';
+        titleInput.required = true;
+        bodyInput.value = '';
+        linkInput.value = '';
+        document.getElementById('body-count').textContent = '0';
+      } else if (type === 'link') {
+        linkGroup.style.display = 'block';
+        titleInput.required = false;
+        bodyInput.value = '';
+        mediaInput.value = '';
+        document.getElementById('body-count').textContent = '0';
+        document.getElementById('media-preview').innerHTML = '';
+      }
+    }
+
+    // Character counters
     document.getElementById('title').addEventListener('input', function() {
       document.getElementById('title-count').textContent = this.value.length;
     });
     document.getElementById('body').addEventListener('input', function() {
       document.getElementById('body-count').textContent = this.value.length;
     });
+
+    // Image preview
     document.getElementById('media').addEventListener('change', function() {
-      const preview = document.getElementById('media-preview');
+      var preview = document.getElementById('media-preview');
       if (this.files && this.files[0]) {
-        const file = this.files[0];
+        var file = this.files[0];
         if (file.type.startsWith('image/')) {
-          const reader = new FileReader();
+          var reader = new FileReader();
           reader.onload = function(e) {
             preview.innerHTML = '<img src="' + e.target.result + '" style="max-width:100%;max-height:300px;border-radius:8px;margin-top:0.5rem;">';
           };
           reader.readAsDataURL(file);
-        } else {
-          preview.innerHTML = '<p style="color:#888;margin-top:0.5rem;">فيديو: ' + file.name + '</p>';
+        }
+      }
+    });
+
+    // Fetch link title
+    var linkDebounce = null;
+    document.getElementById('link_url').addEventListener('input', function() {
+      var url = this.value.trim();
+      var previewDiv = document.getElementById('link-preview');
+      var titleSpan = document.getElementById('link-title-preview');
+
+      if (linkDebounce) clearTimeout(linkDebounce);
+
+      if (!url || !/^https?:\/\/.+\..+/.test(url)) {
+        previewDiv.style.display = 'none';
+        return;
+      }
+
+      linkDebounce = setTimeout(function() {
+        fetchingTitle = true;
+        fetch('/api/fetch-link-title', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          fetchingTitle = false;
+          if (data.title) {
+            titleSpan.textContent = data.title;
+            previewDiv.style.display = 'block';
+          } else {
+            previewDiv.style.display = 'none';
+          }
+        })
+        .catch(function() {
+          fetchingTitle = false;
+          previewDiv.style.display = 'none';
+        });
+      }, 600);
+    });
+
+    // Form validation before submit
+    document.getElementById('create-post-form').addEventListener('submit', function(e) {
+      var type = currentPostType;
+      if (type === 'link') {
+        var linkVal = document.getElementById('link_url').value.trim();
+        if (!linkVal) {
+          e.preventDefault();
+          alert('الرابط مطلوب');
+          return;
+        }
+        if (!/^https?:\/\/.+\..+/.test(linkVal)) {
+          e.preventDefault();
+          alert('أدخل رابطاً صحيحاً يبدأ بـ http:// أو https://');
+          return;
+        }
+      } else if (type === 'image') {
+        var mediaFile = document.getElementById('media');
+        if (!mediaFile.files || !mediaFile.files.length) {
+          e.preventDefault();
+          alert('اختر صورة للمنشور');
+          return;
         }
       }
     });

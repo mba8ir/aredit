@@ -16,31 +16,61 @@
       <% if (error) { %>
         <div class="alert alert-error"><%= error %></div>
       <% } %>
+
+      <% const pType = post.post_type || 'text'; %>
+      <p style="color:#888;font-size:0.85rem;margin-bottom:1rem;">
+        نوع المنشور:
+        <% if (pType === 'text') { %>&#128196; نص<% } %>
+        <% if (pType === 'image') { %>&#128247; صورة<% } %>
+        <% if (pType === 'link') { %>&#128279; رابط<% } %>
+      </p>
+
       <form method="POST" action="/p/<%= post.id %>/edit">
-        <div class="form-group">
-          <label for="title">العنوان</label>
-          <input type="text" id="title" name="title" required dir="rtl" value="<%= post.title %>" maxlength="300">
-          <div class="char-counter"><span id="title-count"><%= post.title.length %></span>/300</div>
-        </div>
-        <div class="form-group">
-          <label for="body">المحتوى</label>
-          <textarea id="body" name="body" rows="8" dir="rtl" maxlength="40000"><%= post.body || '' %></textarea>
-          <div class="char-counter"><span id="body-count"><%= (post.body || '').length %></span>/40000</div>
-        </div>
+        <% if (pType !== 'link') { %>
+          <div class="form-group">
+            <label for="title">العنوان</label>
+            <input type="text" id="title" name="title" required dir="rtl" value="<%= post.title %>" maxlength="300">
+            <div class="char-counter"><span id="title-count"><%= post.title.length %></span>/300</div>
+          </div>
+        <% } else { %>
+          <div style="margin-bottom:1rem;">
+            <p style="color:#aaa;font-size:0.85rem;">العنوان (مستخرج تلقائياً): <strong style="color:#e0e0e0;"><%= post.title %></strong></p>
+            <p style="margin-top:0.5rem;"><a href="<%= post.link_url %>" target="_blank" rel="noopener" style="font-size:0.85rem;direction:ltr;display:inline-block;"><%= post.link_url %></a></p>
+          </div>
+        <% } %>
+
+        <% if (pType === 'text') { %>
+          <div class="form-group">
+            <label for="body">المحتوى</label>
+            <textarea id="body" name="body" rows="8" dir="rtl" maxlength="40000"><%= post.body || '' %></textarea>
+            <div class="char-counter"><span id="body-count"><%= (post.body || '').length %></span>/40000</div>
+          </div>
+        <% } %>
+
         <div style="display: flex; gap: 0.5rem;">
-          <button type="submit" class="btn btn-primary" style="flex:1;">حفظ التعديلات</button>
-          <a href="/p/<%= post.id %>" class="btn btn-outline" style="flex:1; text-align:center;">إلغاء</a>
+          <% if (pType !== 'link') { %>
+            <button type="submit" class="btn btn-primary" style="flex:1;">حفظ التعديلات</button>
+          <% } else { %>
+            <span style="color:#888;font-size:0.85rem;flex:1;display:flex;align-items:center;">لا يمكن تعديل منشورات الروابط</span>
+          <% } %>
+          <a href="/p/<%= post.id %>" class="btn btn-outline" style="flex:1; text-align:center;">رجوع</a>
         </div>
       </form>
     </div>
   </main>
+  <% if (pType !== 'link') { %>
   <script>
+    <% if (pType !== 'link') { %>
     document.getElementById('title').addEventListener('input', function() {
       document.getElementById('title-count').textContent = this.value.length;
     });
+    <% } %>
+    <% if (pType === 'text') { %>
     document.getElementById('body').addEventListener('input', function() {
       document.getElementById('body-count').textContent = this.value.length;
     });
+    <% } %>
   </script>
+  <% } %>
 </body>
 </html>
